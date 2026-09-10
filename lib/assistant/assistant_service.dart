@@ -44,7 +44,7 @@ class AssistantService implements AssistantUseCase {
     if (lower.contains('balance') || lower.contains('account')) {
       final accounts = await adapter.getAccounts(session.customerId);
       final summary = accounts.map((account) => '${account.name}: ${account.currency} ${account.availableBalance.toStringAsFixed(2)} available').join('\n');
-      return AssistantResponse(text: 'Here are your available balances:\n$summary');
+      return AssistantResponse(text: 'Here are your available balances:\n$summary', payload: {'type': 'account_balance_card', 'accounts': accounts});
     }
     if (lower.contains('transaction') || lower.contains('spent') || lower.contains('purchase')) {
       final transactions = await adapter.searchTransactions(session.customerId, query: _extractSearch(lower));

@@ -34,7 +34,64 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = message.role == MessageRole.user;
     final colors = Theme.of(context).colorScheme;
-    return Align(alignment: isUser ? Alignment.centerRight : Alignment.centerLeft, child: Container(constraints: const BoxConstraints(maxWidth: 560), margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13), decoration: BoxDecoration(color: isUser ? colors.primary : colors.surface, borderRadius: BorderRadius.circular(18).copyWith(bottomRight: isUser ? const Radius.circular(4) : null, bottomLeft: isUser ? null : const Radius.circular(4)), border: isUser ? null : Border.all(color: colors.outlineVariant)), child: Text(message.text, style: TextStyle(color: isUser ? colors.onPrimary : colors.onSurface, height: 1.4))));
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 560),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        decoration: BoxDecoration(
+          color: isUser ? colors.primary : colors.surface,
+          borderRadius: BorderRadius.circular(18).copyWith(bottomRight: isUser ? const Radius.circular(4) : null, bottomLeft: isUser ? null : const Radius.circular(4)),
+          border: isUser ? null : Border.all(color: colors.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message.text, style: TextStyle(color: isUser ? colors.onPrimary : colors.onSurface, height: 1.4)),
+            if (!isUser && message.payload['type'] == 'account_balance_card') ...[
+              const SizedBox(height: 12),
+              _AccountBalanceCards(payload: message.payload),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountBalanceCards extends StatelessWidget {
+  final Map<String, dynamic> payload;
+  const _AccountBalanceCards({required this.payload});
+
+  @override
+  Widget build(BuildContext context) {
+    final accounts = payload['data'] is Map<String, dynamic> ? (payload['data']['accounts'] as List<dynamic>? ?? const []) : (payload['accounts'] as List<dynamic>? ?? const []);
+    return Column(
+      children: accounts.map((item) {
+        final account = item is Account ? item : null;
+        final data = item is Map<String, dynamic> ? item : const <String, dynamic>{};
+        final name = account?.name ?? data['name'] as String? ?? 'Account';
+        final maskedNumber = account?.maskedNumber ?? data['masked_number'] as String? ?? 'Masked account';
+        final currency = account?.currency ?? data['currency'] as String? ?? '';
+        final available = account?.availableBalance ?? (data['available_balance'] as num?)?.toDouble() ?? 0;
+        final balance = account?.balance ?? (data['balance'] as num?)?.toDouble() ?? 0;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.45), borderRadius: BorderRadius.circular(12)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w700))), Text(maskedNumber, style: Theme.of(context).textTheme.labelMedium)]),
+              const SizedBox(height: 8),
+              Text('$currency ${available.toStringAsFixed(2)} available', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              Text('$currency ${balance.toStringAsFixed(2)} current balance', style: Theme.of(context).textTheme.bodySmall),
+            ]),
+          ),
+        );
+      }).toList(),
+    );
   }
 }
 

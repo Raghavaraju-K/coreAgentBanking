@@ -24,11 +24,13 @@ class RemoteAssistantService implements AssistantUseCase {
       );
       final data = response.data ?? const <String, dynamic>{};
       final intent = data['intent'] as String?;
+      final uiPayload = data['ui_payload'] as Map<String, dynamic>?;
       return AssistantResponse(
         text: data['assistant_message'] as String? ?? 'I could not understand that request.',
         actionKind: _actionKind(intent),
         status: _actionStatus(data['state'] as String?),
-        metadata: {'uiPayloadType': (data['ui_payload'] as Map<String, dynamic>?)?['type'] as String? ?? 'text'},
+        metadata: {'uiPayloadType': uiPayload?['type'] as String? ?? 'text'},
+        payload: uiPayload ?? const {},
       );
     } on DioException catch (exception) {
       final statusCode = exception.response?.statusCode;

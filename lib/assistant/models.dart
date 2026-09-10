@@ -22,6 +22,7 @@ class ChatMessage {
   final ActionKind actionKind;
   final ActionStatus status;
   final Map<String, String> metadata;
+  final Map<String, dynamic> payload;
 
   const ChatMessage({
     required this.id,
@@ -31,6 +32,7 @@ class ChatMessage {
     this.actionKind = ActionKind.none,
     this.status = ActionStatus.informational,
     this.metadata = const {},
+    this.payload = const {},
   });
 }
 
@@ -95,12 +97,14 @@ class AssistantResponse {
   final ActionKind actionKind;
   final ActionStatus status;
   final Map<String, String> metadata;
+  final Map<String, dynamic> payload;
 
   const AssistantResponse({
     required this.text,
     this.actionKind = ActionKind.none,
     this.status = ActionStatus.informational,
     this.metadata = const {},
+    this.payload = const {},
   });
 }
 

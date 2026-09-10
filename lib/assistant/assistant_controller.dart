@@ -29,7 +29,7 @@ class AssistantController extends GetxController {
     super.onClose();
   }
 
-  ChatMessage _message(MessageRole role, String text, {ActionKind kind = ActionKind.none, ActionStatus status = ActionStatus.informational}) => ChatMessage(id: DateTime.now().microsecondsSinceEpoch.toString(), role: role, text: text, createdAt: DateTime.now(), actionKind: kind, status: status);
+  ChatMessage _message(MessageRole role, String text, {ActionKind kind = ActionKind.none, ActionStatus status = ActionStatus.informational, Map<String, dynamic> payload = const {}}) => ChatMessage(id: DateTime.now().microsecondsSinceEpoch.toString(), role: role, text: text, createdAt: DateTime.now(), actionKind: kind, status: status, payload: payload);
 
   Future<void> send([String? suggested]) async {
     final text = (suggested ?? inputController.text).trim();
@@ -42,7 +42,7 @@ class AssistantController extends GetxController {
     _scrollToEnd();
     try {
       final response = await service.respond(session, text);
-      messages.add(_message(MessageRole.assistant, response.text, kind: response.actionKind, status: response.status));
+      messages.add(_message(MessageRole.assistant, response.text, kind: response.actionKind, status: response.status, payload: response.payload));
       pendingAction.value = response.actionKind == ActionKind.none ? null : response;
     } on AuthorizationException catch (exception) {
       error.value = exception.message;
