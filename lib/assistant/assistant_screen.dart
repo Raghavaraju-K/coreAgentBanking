@@ -16,12 +16,30 @@ class AssistantScreen extends GetView<AssistantController> {
         title: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Digital banking assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)), Text('Secure help for your everyday banking', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400))]),
         actions: [Padding(padding: const EdgeInsets.only(right: 16), child: CircleAvatar(radius: 18, backgroundColor: colors.primaryContainer, child: Icon(Icons.shield_outlined, size: 19, color: colors.onPrimaryContainer)))],
       ),
-      body: Obx(() => Column(children: [
-        Expanded(child: ListView.builder(controller: controller.scrollController, padding: const EdgeInsets.fromLTRB(16, 20, 16, 12), itemCount: controller.messages.length + (controller.isLoading.value ? 1 : 0), itemBuilder: (context, index) => index == controller.messages.length ? const _TypingIndicator() : _MessageBubble(message: controller.messages[index]))),
-        if (controller.pendingAction.value != null) _ActionPanel(response: controller.pendingAction.value!, onAction: controller.handleAction),
-        _Suggestions(onSelected: controller.send),
-        if (controller.error.value != null) _ErrorBanner(message: controller.error.value!, onRetry: controller.send),
-        _Composer(controller: controller.inputController, onSend: controller.send, enabled: !controller.isLoading.value),
+      body: Obx(() => Stack(children: [
+        Column(children: [
+          Expanded(child: ListView.builder(controller: controller.scrollController, padding: const EdgeInsets.fromLTRB(16, 20, 16, 12), itemCount: controller.messages.length + (controller.isLoading.value ? 1 : 0), itemBuilder: (context, index) => index == controller.messages.length ? const _TypingIndicator() : _MessageBubble(message: controller.messages[index]))),
+          if (controller.pendingAction.value != null) _ActionPanel(response: controller.pendingAction.value!, onAction: controller.handleAction),
+          _Suggestions(onSelected: controller.send),
+          if (controller.error.value != null) _ErrorBanner(message: controller.error.value!, onRetry: controller.send),
+          _Composer(controller: controller.inputController, onSend: controller.send, enabled: !controller.isLoading.value),
+        ]),
+        if (controller.isLoading.value) ...[
+          const ModalBarrier(dismissible: false, color: Colors.black26),
+          Center(
+            child: Card(
+              margin: const EdgeInsets.all(32),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const SizedBox(width: 30, height: 30, child: CircularProgressIndicator()),
+                  const SizedBox(height: 14),
+                  Text('Checking securely...', style: Theme.of(context).textTheme.titleSmall),
+                ]),
+              ),
+            ),
+          ),
+        ],
       ])),
     );
   }
