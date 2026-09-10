@@ -1,0 +1,23 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+coverage/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local secrets and environment files
+backend/.env
+.env
+*.secret
+
+# IDE/local state
+.vscode/settings.json
+.vscode/launch.json
