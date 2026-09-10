@@ -1,6 +1,7 @@
 from uuid import UUID, uuid4
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
 
 from .agent import AssistantAgent
 from .audit import AuditService
@@ -11,6 +12,13 @@ from .security import current_customer
 from .settings import settings
 
 app = FastAPI(title="Digital Banking Assistant API", version="1.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 banking = MockBankingAdapter()
 audit = AuditService()
 agent = AssistantAgent(banking, audit)

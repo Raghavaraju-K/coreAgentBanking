@@ -33,6 +33,9 @@ class RemoteAssistantService implements AssistantUseCase {
     } on DioException catch (exception) {
       final statusCode = exception.response?.statusCode;
       if (statusCode == 401) throw const AuthorizationException('Your session has expired. Please sign in again.');
+      if (exception.type == DioExceptionType.connectionError || exception.type == DioExceptionType.connectionTimeout) {
+        throw const ValidationException('Cannot reach the banking API. Start FastAPI on port 8000 and try again.');
+      }
       throw const ValidationException('The banking service is unavailable. Please try again.');
     }
   }
