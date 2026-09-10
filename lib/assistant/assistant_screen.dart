@@ -19,7 +19,7 @@ class AssistantScreen extends GetView<AssistantController> {
       body: Obx(() => Column(children: [
         Expanded(child: ListView.builder(controller: controller.scrollController, padding: const EdgeInsets.fromLTRB(16, 20, 16, 12), itemCount: controller.messages.length + (controller.isLoading.value ? 1 : 0), itemBuilder: (context, index) => index == controller.messages.length ? const _TypingIndicator() : _MessageBubble(message: controller.messages[index]))),
         if (controller.pendingAction.value != null) _ActionPanel(response: controller.pendingAction.value!, onAction: controller.handleAction),
-        if (controller.messages.length == 1) _Suggestions(onSelected: controller.send),
+        _Suggestions(onSelected: controller.send),
         if (controller.error.value != null) _ErrorBanner(message: controller.error.value!, onRetry: controller.send),
         _Composer(controller: controller.inputController, onSend: controller.send, enabled: !controller.isLoading.value),
       ])),
@@ -52,6 +52,10 @@ class _MessageBubble extends StatelessWidget {
             if (!isUser && message.payload['type'] == 'account_balance_card') ...[
               const SizedBox(height: 12),
               _AccountBalanceCards(payload: message.payload),
+            ],
+            if (!isUser && message.payload['type'] == 'transaction_list') ...[
+              const SizedBox(height: 12),
+              _TransactionList(payload: message.payload),
             ],
           ],
         ),
@@ -95,6 +99,32 @@ class _AccountBalanceCards extends StatelessWidget {
   }
 }
 
+class _TransactionList extends StatelessWidget {
+  final Map<String, dynamic> payload;
+  const _TransactionList({required this.payload});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = payload['data'] is Map<String, dynamic> ? payload['data'] as Map<String, dynamic> : payload;
+    final transactions = data['transactions'] as List<dynamic>? ?? const [];
+    return Column(
+      children: transactions.map((item) {
+        final transaction = item as Map<String, dynamic>;
+        final isCredit = transaction['transaction_type'] == 'credit';
+        final amount = (transaction['amount'] as num?)?.toDouble() ?? 0;
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          leading: CircleAvatar(radius: 16, child: Icon(isCredit ? Icons.south_west : Icons.north_east, size: 16)),
+          title: Text(transaction['merchant'] as String? ?? 'Transaction', style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: Text(transaction['category'] as String? ?? 'Banking transaction'),
+          trailing: Text('${isCredit ? '+' : '-'}${amount.toStringAsFixed(2)}', style: TextStyle(color: isCredit ? Colors.green.shade700 : null, fontWeight: FontWeight.w700)),
+        );
+      }).toList(),
+    );
+  }
+}
+
 class _Suggestions extends StatelessWidget {
   final ValueChanged<String> onSelected;
   const _Suggestions({required this.onSelected});
@@ -119,7 +149,7 @@ class _Composer extends StatelessWidget {
   final bool enabled;
   const _Composer({required this.controller, required this.onSend, required this.enabled});
   @override
-  Widget build(BuildContext context) => SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 14), child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [Expanded(child: TextField(controller: controller, enabled: enabled, minLines: 1, maxLines: 4, textInputAction: TextInputAction.send, onSubmitted: onSend, decoration: const InputDecoration(hintText: 'Ask about your banking'))), const SizedBox(width: 8), IconButton.filled(tooltip: 'Send message', onPressed: enabled ? () => onSend(controller.text) : null, icon: const Icon(Icons.arrow_upward))])));
+  Widget build(BuildContext context) => SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(16, 4, 16, 14), child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [Expanded(child: TextField(controller: controller, enabled: enabled, minLines: 1, maxLines: 1, textInputAction: TextInputAction.send, onSubmitted: onSend, decoration: const InputDecoration(hintText: 'Ask about your banking'))), const SizedBox(width: 8), IconButton.filled(tooltip: 'Send message', onPressed: enabled ? () => onSend(controller.text) : null, icon: const Icon(Icons.arrow_upward))])));
 }
 
 class _ActionPanel extends StatelessWidget {

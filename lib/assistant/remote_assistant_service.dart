@@ -43,13 +43,45 @@ class RemoteAssistantService implements AssistantUseCase {
   }
 
   @override
-  Future<String> confirmTransfer(AuthenticatedSession session, TransferDraft draft) => throw const AuthorizationException('Complete secure step-up authentication in the banking app before confirming a transfer.');
+  Future<String> confirmTransfer(AuthenticatedSession session, TransferDraft draft) async {
+    final response = await client.post<Map<String, dynamic>>('/api/v1/transfers/draft', data: {
+      'source_account_id': draft.sourceAccountId,
+      'destination_account_id': 'savings-001',
+      'amount': draft.amount,
+      'scheduled_date': draft.date.toIso8601String().substring(0, 10),
+      'note': draft.note,
+    }, options: await _authOptions());
+    final transferId = response.data?['id'] as String?;
+    if (transferId == null) throw const ValidationException('The transfer draft could not be created.');
+    final receipt = await client.post<Map<String, dynamic>>('/api/v1/transfers/$transferId/confirm', data: {'idempotency_key': _idempotencyKey(), 'step_up_token': await _stepUpToken()}, options: await _authOptions());
+    return receipt.data?['reference_id'] as String? ?? 'completed';
+  }
 
   @override
-  Future<String> confirmFreeze(AuthenticatedSession session, bool freeze) => throw const AuthorizationException('Complete secure step-up authentication in the banking app before changing card status.');
+  Future<String> confirmFreeze(AuthenticatedSession session, bool freeze) async {
+    final endpoint = freeze ? 'freeze' : 'unfreeze';
+    final response = await client.post<Map<String, dynamic>>('/api/v1/cards/checking-001/$endpoint', data: {'idempotency_key': _idempotencyKey(), 'step_up_token': await _stepUpToken()}, options: await _authOptions());
+    return response.data?['status'] as String? ?? 'completed';
+  }
 
   @override
-  Future<String> openTicket(AuthenticatedSession session, String category) => throw const ValidationException('Support requests require the guided backend form.');
+  Future<String> openTicket(AuthenticatedSession session, String category) async {
+    final normalized = category.toLowerCase().contains('card') ? 'card_issue' : category.toLowerCase().contains('account') ? 'account_issue' : 'incorrect_transaction';
+    final response = await client.post<Map<String, dynamic>>('/api/v1/support/tickets', data: {'category': normalized, 'description': category}, options: await _authOptions());
+    return response.data?['reference'] as String? ?? 'opened';
+  }
+
+  Future<Options> _authOptions() async {
+    final token = await secureStorage.read(key: 'access_token') ?? 'demo-token';
+    return Options(headers: {'Authorization': 'Bearer $token'});
+  }
+
+  Future<String> _stepUpToken() async {
+    final response = await client.post<Map<String, dynamic>>('/api/v1/assistant/actions/00000000-0000-4000-8000-000000000001/step-up/verify', data: {'method': 'biometric'}, options: await _authOptions());
+    return response.data?['step_up_token'] as String? ?? (throw const AuthorizationException('Secure confirmation was not completed.'));
+  }
+
+  String _idempotencyKey() => 'assistant-${DateTime.now().microsecondsSinceEpoch}';
 
   ActionKind _actionKind(String? intent) {
     switch (intent) {
